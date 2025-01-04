@@ -47,10 +47,12 @@
             margin: 2px;
         }
         #buttonpanel button#delete {
-            background-color: #d62a2a;
             justify-content: right;
             justify-self: right;
             margin-left: auto;
+        }
+        .warn {
+            background-color: #d62a2a;
         }
     </style>
 </head>
@@ -72,7 +74,7 @@
         <!-- Modpack Management Section -->
         <div id="mod-list-container">
             <h2>Installed Mods</h2>
-            <button onclick='location.href = "./modpack.html"' style="background-color: #d62a2a;">Clear All</button>
+            <button onclick='location.href = "./modpack.html"' class="warn">Clear All</button>
             <div class="mod-list">
                 <!-- Modpacks will be dynamically listed here -->
             </div>
@@ -103,7 +105,7 @@
                     <div id="buttonpanel">
                         <button id="load" onclick="loadPack('${id}')">Load</button>
                         <button id="edit" onclick="editPack('${id}')">Edit</button>
-                        <button id="delete" onclick="deletePack('${id}')">delete</button>
+                        <button id="delete" class="warn" onclick="deletePack('${id}')">delete</button>
                     </div>
                 `
 
