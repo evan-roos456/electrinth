@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Electrinth - Mod manager</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .container {
+            padding: 20px;
+        }
+        .modpack-list {
+            margin: 5px;
+            margin-bottom: 20px;
+            display: grid;
+            grid-template-columns: auto auto;
+        }
+        .mod-list {
+            margin: 5px;
+            margin-bottom: 20px;
+            display: grid;
+            grid-template-columns: auto auto;
+        }
+        div.modpack {
+            background-color: #2a2a2a;
+            transition: background-color 0.2s;
+            border-radius: 10px;
+            padding: 5px;
+            margin: 7px;
+        }
+        div.modpack.active {
+            background-color: #404040;
+        }
+        .mod-name b {
+            font-size: larger;
+            padding: 5px;
+            margin: 5px;
+        }
+        .mod-desc {
+            padding-left: 20px;
+        }
+        #buttonpanel {
+            display: flex;
+            padding: 2px;
+        }
+        #buttonpanel button {
+            margin: 2px;
+        }
+        #buttonpanel button#delete {
+            background-color: #d62a2a;
+            justify-content: right;
+            justify-self: right;
+            margin-left: auto;
+        }
+        .search-bar {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        input, select {
+            flex: 1;
+            padding: 8px;
+            font-size: 14px;
+            margin-right: 5px;
+            background-color: #3a3a3a;
+            border: none;
+            border-radius: 5px;
+            color: #ababab;
+        }
+        .search-bar button {
+            padding: 6px;
+            background-color: #4CAF50;
+            border: #4CAF50;
+            filter: none;
+        }
+        .search-bar button.off {
+            background-color: transparent;
+            filter: invert(55%) sepia(67%) saturate(403%) hue-rotate(72deg) brightness(93%) contrast(88%);
+        }
+        .dropdown {
+            position: relative;
+            display: inline-block;
+        }
+        .dropdown-content {
+            display: none;
+            position: absolute;
+            background-color: #2b2b2b;
+            box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+            padding: 10px;
+            z-index: 1;
+            right: 0px;
+        }
+        .dropdown-content label {
+            display: block;
+            margin-bottom: 5px;
+        }
+        .dropdown:hover .dropdown-content {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Modpack Management Section -->
+        <div id="modpack-list-container">
+            <h2>Modpacks</h2>
+            <div class="search-bar">
+                <input type="text" id="search-modpacks" placeholder="Search Modpacks...">
+                <div class="dropdown">
+                    <button><svg xmlns="http://www.w3.org/2000/svg" fill="#000000" width="20px" height="20px" viewBox="0 0 32 32" version="1.1">
+                        <path d="M30 6.749h-28c-0.69 0-1.25 0.56-1.25 1.25s0.56 1.25 1.25 1.25v0h28c0.69 0 1.25-0.56 1.25-1.25s-0.56-1.25-1.25-1.25v0zM24 14.75h-16c-0.69 0-1.25 0.56-1.25 1.25s0.56 1.25 1.25 1.25v0h16c0.69 0 1.25-0.56 1.25-1.25s-0.56-1.25-1.25-1.25v0zM19 22.75h-6.053c-0.69 0-1.25 0.56-1.25 1.25s0.56 1.25 1.25 1.25v0h6.053c0.69 0 1.25-0.56 1.25-1.25s-0.56-1.25-1.25-1.25v0z"/>
+                        </svg></button>
+                    <div class="dropdown-content">
+                        <label for="filter-version">Version:</label>
+                        <input type="text" id="filter-version" placeholder="Enter version">
+                        <label for="filter-loader">Loader:</label>
+                        <select id="filter-loader">
+                            <option value="forge">Forge</option>
+                            <option value="fabric">Fabric</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            <button onclick='location.href = "./modpack.html"'>Create New Modpack</button>
+            <button onclick='location.href = "./browsemodpacks.html"'>Load Modrinth Pack</button>
+            <button id="install-modpack-url">Install Modpack From URL</button>
+            <div class="modpack-list">
+                <!-- Modpacks will be dynamically listed here -->
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- Modpack Management Section -->
+        <div id="mod-list-container">
+            <h2>Installed Mods</h2>
+            <button onclick='location.href = "./modpack.html"' style="background-color: #d62a2a;">Clear All</button>
+            <div class="mod-list">
+                <!-- Modpacks will be dynamically listed here -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let packs = JSON.parse(localStorage.getItem('packs'));
+        let loadedPacks = [];
+
+        updatePacks();
+        function updatePackVar() {packs = JSON.parse(localStorage.getItem('packs'))}
+        function updatePacks() {
+            updatePackVar()
+            
+            let container = document.querySelector('.modpack-list');
+            container.innerHTML = '';
+            
+            for(let id in packs) {
+                let modpack = packs[id];
+                let div = document.createElement('div');
+                div.classList.add('modpack');
+                div.id = id;
+
+                div.innerHTML = `
+                    <p class="mod-name"><b>${modpack.name}</b> <i>${modpack.version} ${modpack.loader}</i></p>
+                    <p class="mod-desc">${modpack.desc}</p>
+                    <div id="buttonpanel">
+                        <button id="load" onclick="loadPack('${id}')">Load</button>
+                        <button id="edit" onclick="editPack('${id}')">Edit</button>
+                        <button id="delete" onclick="deletePack('${id}')">delete</button>
+                    </div>
+                `
+
+                container.appendChild(div);
+            }
+        }
+        function editPack(id) {
+            updatePackVar();
+            location.href = './modpack.html?' + new URLSearchParams({data: JSON.stringify({...packs[id], packid: id})});
+        }
+        function loadPack(id) {
+            let div = document.getElementById(id);
+            let loadbtn = div.querySelector('#load');
+            if(loadbtn.innerText == 'Load') {
+                loadbtn.innerText = "Unload";
+                div.classList.add('active');
+            }
+            else {
+                loadbtn.innerText = "Load";
+                div.classList.remove('active');
+            }
+        }
+        function deletePack(id) {
+            delete packs[id];
+            localStorage.setItem('packs', JSON.stringify(packs));
+            document.getElementById(id).outerHTML = '';
+        }
+    </script>
+</body>
+</html>
