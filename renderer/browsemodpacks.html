@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset='utf-8'>
+    <meta http-equiv='X-UA-Compatible' content='IE=edge'>
+    <title>Electrinth - Create Pack</title>
+    <meta name='viewport' content='width=device-width, initial-scale=1'>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        #searchresults {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+            padding: 20px;
+        }
+
+        .mod {
+            background: #202020;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            text-align: center;
+            transition: transform 0.2s, box-shadow 0.5s, background 0.2s;
+            user-select: none;
+            cursor: pointer;
+        }
+
+        .mod:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .mod img {
+            max-width: 100px;
+            border-radius: 5px;
+            margin-bottom: 15px;
+        }
+
+        .categories {
+            margin-bottom: 10px;
+        }
+
+        .categories span {
+            display: inline-block;
+            background: #4CAF50;
+            color: #fff;
+            padding: 5px 10px;
+            border-radius: 3px;
+            margin: 2px;
+            font-size: 0.9em;
+        }
+
+        .mod p {
+            margin: 10px 0;
+        }
+
+        .mod strong, a {
+            color: #45a049;
+        }
+
+        #search input, #search select, #search-input {
+            margin: 5px 0;
+            padding: 10px;
+            font-size: 1em;
+            border: none;
+            border-radius: 5px;
+            background-color: #1e1e1e;
+            color: #fff;
+            width: 99%;
+        }
+
+        #settings button {
+            width: 50%;
+            display: block;
+            margin: auto;
+        }
+
+        #search {
+            padding: 20px;
+            margin: 20px;
+            background: #2a2a2a;
+            margin-bottom: 20px;
+            border-radius: 8px;
+        }
+
+        .dependency {
+            background-color: #1a7600;
+        }
+
+        .selected {
+            background-color: rgb(0, 87, 116);
+        }
+
+        #pageControls {
+            display: flex;
+            width: 100%;
+        }
+        #pageControls button {
+            margin: 5px;
+        }
+        #pageControls p {
+            justify-content: flex-end;
+            margin-left: auto;
+        }
+    </style>
+</head>
+<body>
+    <div id="search">
+        <h3>Modpacks</h3>
+        <input type="text" id="version" placeholder="Any" value="1.20.1">
+        <select id="loader" value="fabric">
+            <option value="any">Any</option>
+            <option value="fabric">Fabric</option>
+            <option value="forge">Forge</option>
+            <option value="quilt">Quilt</option>
+            <option value="neoforge">Neo-Forge</option>
+        </select>
+        <input type="text" id="search-input" placeholder="Search for modpacks here">
+        <div id="searchresults">
+        </div>
+        <div id="pageControls">
+            <button id="prev" onclick="page.numb -= 1">Previous</button>
+            <button id="next" onclick="page.numb += 1">Next</button>
+            <p id="count" style="display: none;"></p>
+        </div>
+    </div>
+    <script>
+        let pack = {
+            get loader() {return document.getElementById('loader').value},
+            set loader(v) {document.getElementById('loader').value = v;},
+            
+            get version() {return document.getElementById('version').value},
+            set version(v) {document.getElementById('version').value = v},
+        }
+        let selectedModpacks = [];
+        try {
+            let selmods = localStorage.getItem('rinthpacks') || '[]';
+            selmods = JSON.parse(selmods);
+            selectedModpacks = selmods;
+        }
+        catch (error) {
+            localStorage.setItem('rinthpacks', '[]');
+        }
+        let page = {
+            next: document.getElementById('next'),
+            prev: document.getElementById('prev'),
+            count: document.getElementById('count'),
+
+            pagenumber: 0,
+            get numb() {return page.pagenumber},
+            set numb(v) {page.pagenumber = v; loadMods(); return v;},
+
+            sz: 12,
+            get size() {return page.sz},
+            set size(v) {page.sz = v; page.numb = 0; return page.sz}
+        }
+
+        loadMods();
+        async function loadMods() {
+            let offset = page.numb * page.size;
+            let facets = ['["project_type:modpack"]'];
+            if(pack.version != '') facets.push(`["versions:${pack.version}"]`);
+            if(pack.loader != 'any') facets.push(`["categories:${pack.loader}"]`);
+
+            let result = JSON.parse(await fetch(`https://api.modrinth.com/v2/search?`+new URLSearchParams({
+                query: document.querySelector('#search-input').value,
+                facets: `[${facets.join(',')}]`,
+                limit: page.size,
+                offset
+            })).then(v=>v.text()));
+
+            page.next.style.display = 'none';
+            page.prev.style.display = 'none';
+
+            let max = result.total_hits;
+            if(offset+result.hits.length < result.total_hits) page.next.style.display = 'block';
+            if(page.numb > 0) page.prev.style.display = 'block';
+            
+            page.count.style.display = 'block';
+            page.count.innerText = `Page ${page.numb+1} of ${Math.ceil(result.total_hits/page.size)} (${result.total_hits.toLocaleString()} mods)`;
+
+            const html = result.hits.map(mod => `
+                <div class="mod" onclick="modClick('${mod.project_id}')" id="${mod.project_id}">
+                    ${mod.icon_url?`<img src="${mod.icon_url}" alt="${mod.title}">`:""}
+                    <h2>${mod.title}</h2>
+                    <div class="categories">${mod.categories.map(category => `<span>${category}</span>`).join('')}</div>
+                    <p>${mod.description}</p>
+                    <p>Downloads: <strong>${mod.downloads.toLocaleString()}</strong></p>
+                    <a target="_blank" href="https://modrinth.com/modpack/${mod.project_id}">Open on modrinth</a>
+                </div>
+            `).join('');
+            document.querySelector('#searchresults').innerHTML = html;
+            document.querySelector('#searchresults').querySelectorAll('a').forEach(a=>{
+                a.onclick=(e)=>{
+                    e.preventDefault();
+                    e.stopPropagation();
+                    openInBrowser(a.href);
+                    // modClick(a.id);
+                }
+            })
+            loadClasses();
+        }
+        function loadClasses(idepbtn = true) {
+            document.querySelectorAll('.mod').forEach(elem=>{
+                if(selectedModpacks.includes(elem.id)) elem.classList.add('selected');
+                else elem.classList.remove('selected')
+            })
+        }
+        function modClick(id) {
+            if(selectedModpacks.includes(id)) selectedModpacks.splice(selectedModpacks.indexOf(id), 1);
+            else selectedModpacks.push(id)
+            document.getElementById(id).classList.toggle('selected')
+
+            setStorage();
+        }
+        function setStorage() {
+            try {
+                localStorage.setItem('rinthpacks', JSON.stringify([...new Set(selectedModpacks)]))
+            } catch (error) {
+                console.log(error)
+            }
+        }
+        function updatePack() {
+            const modpack = {
+                name: pack.name, desc: pack.desc,
+                loader: pack.loader, version: pack.version,
+                mods: selectedModpacks, customMods: []
+            };
+            let modpacks = localStorage.getItem('packs') || '{}';
+            modpacks = JSON.parse(modpacks);
+            modpacks[pack.id] = modpack;
+            localStorage.setItem('packs', JSON.stringify(modpacks))
+            location.href = './manager.html';
+        }
+
+        document.getElementById('loader').addEventListener('change', loadMods);
+        document.getElementById('version').addEventListener('keyup', loadMods);
+        document.getElementById('search-input').addEventListener('keyup', loadMods);
+    </script>
+</body>
+</html>
