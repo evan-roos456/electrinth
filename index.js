@@ -125,7 +125,7 @@ const template = [
     role: 'help',
     submenu: [
       {
-        label: 'Idk ask evan'
+        label: 'Help may be avalible on github when I have time'
       }
     ]
   }
