@@ -83,7 +83,7 @@
 
     <script>
         let packs = JSON.parse(localStorage.getItem('packs'));
-        let loadedPacks = [];
+        let selectedPacks = [];
 
         updatePacks();
         function updatePackVar() {packs = JSON.parse(localStorage.getItem('packs'))}
@@ -103,7 +103,7 @@
                     <p class="mod-name"><b>${modpack.name}</b> <i>${modpack.version} ${modpack.loader}</i></p>
                     <p class="mod-desc">${modpack.desc}</p>
                     <div id="buttonpanel">
-                        <button id="load" onclick="loadPack('${id}')">Load</button>
+                        <button id="select" onclick="selectPack('${id}')">Select</button>
                         <button id="edit" onclick="editPack('${id}')">Edit</button>
                         <button id="delete" class="warn" onclick="deletePack('${id}')">delete</button>
                     </div>
@@ -116,15 +116,15 @@
             updatePackVar();
             location.href = './modpack.html?' + new URLSearchParams({data: JSON.stringify({...packs[id], packid: id})});
         }
-        function loadPack(id) {
+        function selectPack(id) {
             let div = document.getElementById(id);
-            let loadbtn = div.querySelector('#load');
-            if(loadbtn.innerText == 'Load') {
-                loadbtn.innerText = "Unload";
+            let selectbtn = div.querySelector('#select');
+            if(selectbtn.innerText == 'Select') {
+                selectbtn.innerText = "Deselect";
                 div.classList.add('active');
             }
             else {
-                loadbtn.innerText = "Load";
+                selectbtn.innerText = "Select";
                 div.classList.remove('active');
             }
         }
